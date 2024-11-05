@@ -1,0 +1,563 @@
+"environment":
+  "name": |-
+    Pogema-v0
+  "grid_config":
+    "integration": |-
+      SampleFactory
+    "on_target": |-
+      finish
+    "collision_system": |-
+      block_both
+    "observation_type": |-
+      POMAPF
+    "auto_reset": !!bool |-
+      false
+    "num_agents": !!int |-
+      2
+    "obs_radius": !!int |-
+      2
+    "non_random_possible_targets": !!bool |-
+      false
+    "map_name":
+      "grid_search":
+      - |-
+        bottlenecks9-v_corr-3_len
+      - |-
+        bottlenecks9-v_corr-4_len
+      - |-
+        bottlenecks9-v_corr-5_len
+      - |-
+        bottlenecks9-v_corr-6_len
+      - |-
+        bottlenecks9-v_corr-7_len
+      - |-
+        bottlenecks9-v_corr-8_len
+      - |-
+        bottlenecks9-v_corr-9_len
+      - |-
+        bottlenecks9-v_corr-10_len
+      - |-
+        bottlenecks9-v_corr-11_len
+      - |-
+        bottlenecks9-v_corr-12_len
+      - |-
+        bottlenecks9-v_corr-13_len
+      - |-
+        bottlenecks9-v_corr-14_len
+      - |-
+        bottlenecks9-v_corr-15_len
+      - |-
+        bottlenecks9-v_corr-16_len
+      - |-
+        bottlenecks9-v_corr-17_len
+      - |-
+        bottlenecks9-v_corr-18_len
+      - |-
+        bottlenecks9-v_corr-19_len
+      - |-
+        bottlenecks9-v_corr-20_len
+      - |-
+        bottlenecks9-v_corr-21_len
+      - |-
+        bottlenecks9-v_corr-22_len
+      - |-
+        bottlenecks9-v_corr-23_len
+      - |-
+        bottlenecks9-v_corr-24_len
+      - |-
+        bottlenecks9-v_corr-25_len
+      - |-
+        bottlenecks9-v_corr-26_len
+      - |-
+        bottlenecks9-v_corr-27_len
+      - |-
+        bottlenecks9-v_corr-28_len
+      - |-
+        bottlenecks9-v_corr-29_len
+      - |-
+        bottlenecks9-v_corr-30_len
+      - |-
+        bottlenecks9-v_corr-31_len
+      - |-
+        bottlenecks9-v_corr-32_len
+      - |-
+        bottlenecks9-v_corr-33_len
+      - |-
+        bottlenecks9-v_corr-34_len
+      - |-
+        bottlenecks9-v_corr-35_len
+      - |-
+        bottlenecks9-v_corr-36_len
+      - |-
+        bottlenecks9-v_corr-37_len
+      - |-
+        bottlenecks9-v_corr-38_len
+      - |-
+        bottlenecks9-v_corr-39_len
+      - |-
+        bottlenecks9-v_corr-40_len
+      - |-
+        bottlenecks9-v_corr-41_len
+      - |-
+        bottlenecks9-v_corr-42_len
+      - |-
+        bottlenecks9-v_corr-43_len
+      - |-
+        bottlenecks9-v_corr-44_len
+      - |-
+        bottlenecks9-v_corr-45_len
+      - |-
+        bottlenecks9-v_corr-46_len
+      - |-
+        bottlenecks9-v_corr-47_len
+      - |-
+        bottlenecks9-v_corr-48_len
+      - |-
+        bottlenecks9-v_corr-49_len
+      - |-
+        bottlenecks9-v_corr-50_len
+      - |-
+        bottlenecks9-v_corr-100_len
+      - |-
+        bottlenecks9-v_corr-200_len
+      - |-
+        bottlenecks9-v_corr-300_len
+      - |-
+        bottlenecks9-v_corr-400_len
+      - |-
+        bottlenecks9-v_corr-500_len
+      - |-
+        bottlenecks9-v_corr-600_len
+      - |-
+        bottlenecks9-v_corr-700_len
+      - |-
+        bottlenecks9-v_corr-800_len
+      - |-
+        bottlenecks9-v_corr-900_len
+      - |-
+        bottlenecks9-v_corr-1000_len
+    "seed":
+      "grid_search":
+      - !!int |-
+        0
+      - !!int |-
+        1
+      - !!int |-
+        2
+      - !!int |-
+        3
+      - !!int |-
+        4
+      - !!int |-
+        5
+      - !!int |-
+        6
+      - !!int |-
+        7
+      - !!int |-
+        8
+      - !!int |-
+        9
+  "env": |-
+    PogemaBtlnck-v0
+  "use_maps": !!bool |-
+    true
+  "target_num_agents": !!null |
+  "agent_bins": !!null |
+"algorithms":
+  "AttnCoreMem":
+    "name": |-
+      AttnCoreMem
+    "path_to_weights": |-
+      experiments/train_dir/maps9x331_mem_hold0_move0005_tar1_positive_rwrds_seed1
+    "checkpoint_type": |-
+      latest
+    "num_process": !!int |-
+      4
+    "parallel_backend": |-
+      balanced_dask
+  "LocalMemAttnCore":
+    "name": |-
+      AttnCoreMem
+    "path_to_weights": |-
+      experiments/train_dir/maps9x331_local_no_global_mem_hold0_move0005_tar1_positive_rwrds_seed1
+    "checkpoint_type": |-
+      latest
+    "num_process": !!int |-
+      4
+    "parallel_backend": |-
+      balanced_dask
+  "AttnCoreNoMem":
+    "name": |-
+      AttnCoreMem
+    "path_to_weights": |-
+      experiments/train_dir/maps9x331_attn_no_mem_hold0_move0005_tar1_positive_rwrds_seed1
+    "checkpoint_type": |-
+      latest
+    "num_process": !!int |-
+      4
+    "parallel_backend": |-
+      balanced_dask
+  "EmptyCore":
+    "name": |-
+      AttnCoreMem
+    "path_to_weights": |-
+      experiments/train_dir/maps9x331_empty_hold0_move0005_tar1_positive_rwrds_seed1
+    "checkpoint_type": |-
+      latest
+    "num_process": !!int |-
+      4
+    "parallel_backend": |-
+      balanced_dask
+  "RNNCore16":
+    "name": |-
+      AttnCoreMem
+    "path_to_weights": |-
+      experiments/train_dir/maps9x331_rnn_hold0_move0005_tar1_positive_rwrds_seed1
+    "checkpoint_type": |-
+      latest
+    "num_process": !!int |-
+      4
+    "parallel_backend": |-
+      balanced_dask
+"results_views":
+  "TabularResults":
+    "type": |-
+      tabular
+    "drop_keys": []
+    "print_results": !!bool |-
+      true
+  "CSR_per_map":
+    "type": |-
+      plot
+    "remove_title": !!bool |-
+      true
+    "x": |-
+      map_name
+    "y": |-
+      CSR
+    "height": !!int |-
+      3
+    "width": !!int |-
+      12
+    "use_log_scale_x": !!bool |-
+      false
+    "line_width": !!int |-
+      2
+    "hue_order":
+    - |-
+      AttnCoreMem
+    - |-
+      LocalMemAttnCore
+    - |-
+      AttnCoreNoMem
+    - |-
+      EmptyCore
+    - |-
+      RNNCore16
+    "legend_font_size": !!int |-
+      6
+    "font_size": !!int |-
+      8
+    "ticks": &id001
+    - !!int |-
+      0
+    - !!int |-
+      1
+    - !!int |-
+      2
+    - !!int |-
+      3
+    - !!int |-
+      4
+    - !!int |-
+      5
+    - !!int |-
+      6
+    - !!int |-
+      7
+    - !!int |-
+      8
+    - !!int |-
+      9
+    - !!int |-
+      10
+    - !!int |-
+      11
+    - !!int |-
+      12
+    - !!int |-
+      13
+    - !!int |-
+      14
+    - !!int |-
+      15
+    - !!int |-
+      16
+    - !!int |-
+      17
+    - !!int |-
+      18
+    - !!int |-
+      19
+    - !!int |-
+      20
+    - !!int |-
+      21
+    - !!int |-
+      22
+    - !!int |-
+      23
+    - !!int |-
+      24
+    - !!int |-
+      25
+    - !!int |-
+      26
+    - !!int |-
+      27
+    - !!int |-
+      28
+    - !!int |-
+      29
+    - !!int |-
+      30
+    - !!int |-
+      31
+    - !!int |-
+      32
+    - !!int |-
+      33
+    - !!int |-
+      34
+    - !!int |-
+      35
+    - !!int |-
+      36
+    - !!int |-
+      37
+    - !!int |-
+      38
+    - !!int |-
+      39
+    - !!int |-
+      40
+    - !!int |-
+      41
+    - !!int |-
+      42
+    - !!int |-
+      43
+    - !!int |-
+      44
+    - !!int |-
+      45
+    - !!int |-
+      46
+    - !!int |-
+      47
+    - !!int |-
+      48
+    - !!int |-
+      49
+    - !!int |-
+      50
+    - !!int |-
+      51
+    - !!int |-
+      52
+    - !!int |-
+      53
+    - !!int |-
+      54
+    - !!int |-
+      55
+    - !!int |-
+      56
+    - !!int |-
+      57
+    "ticklabels": &id002
+    - |-
+      b-3
+    - |-
+      b-4
+    - |-
+      b-5
+    - |-
+      b-6
+    - |-
+      b-7
+    - |-
+      b-8
+    - |-
+      b-9
+    - |-
+      b-10
+    - |-
+      b-11
+    - |-
+      b-12
+    - |-
+      b-13
+    - |-
+      b-14
+    - |-
+      b-15
+    - |-
+      b-16
+    - |-
+      b-17
+    - |-
+      b-18
+    - |-
+      b-19
+    - |-
+      b-20
+    - |-
+      b-21
+    - |-
+      b-22
+    - |-
+      b-23
+    - |-
+      b-24
+    - |-
+      b-25
+    - |-
+      b-26
+    - |-
+      b-27
+    - |-
+      b-28
+    - |-
+      b-29
+    - |-
+      b-30
+    - |-
+      b-31
+    - |-
+      b-32
+    - |-
+      b-33
+    - |-
+      b-34
+    - |-
+      b-35
+    - |-
+      b-36
+    - |-
+      b-37
+    - |-
+      b-38
+    - |-
+      b-39
+    - |-
+      b-40
+    - |-
+      b-41
+    - |-
+      b-42
+    - |-
+      b-43
+    - |-
+      b-44
+    - |-
+      b-45
+    - |-
+      b-46
+    - |-
+      b-47
+    - |-
+      b-48
+    - |-
+      b-49
+    - |-
+      b-50
+    - |-
+      b-100
+    - |-
+      b-200
+    - |-
+      b-300
+    - |-
+      b-400
+    - |-
+      b-500
+    - |-
+      b-600
+    - |-
+      b-700
+    - |-
+      b-800
+    - |-
+      b-900
+    - |-
+      b-1000
+  "ISR_per_map":
+    "type": |-
+      plot
+    "remove_title": !!bool |-
+      true
+    "x": |-
+      map_name
+    "y": |-
+      ISR
+    "height": !!int |-
+      3
+    "width": !!int |-
+      12
+    "use_log_scale_x": !!bool |-
+      false
+    "line_width": !!int |-
+      2
+    "hue_order":
+    - |-
+      AttnCoreMem
+    - |-
+      LocalMemAttnCore
+    - |-
+      AttnCoreNoMem
+    - |-
+      EmptyCore
+    - |-
+      RNNCore16
+    "legend_font_size": !!int |-
+      6
+    "font_size": !!int |-
+      8
+    "ticks": *id001
+    "ticklabels": *id002
+  "SoC_per_map":
+    "type": |-
+      plot
+    "remove_title": !!bool |-
+      true
+    "x": |-
+      map_name
+    "y": |-
+      SoC
+    "height": !!int |-
+      3
+    "width": !!int |-
+      12
+    "use_log_scale_x": !!bool |-
+      false
+    "line_width": !!int |-
+      2
+    "hue_order":
+    - |-
+      AttnCoreMem
+    - |-
+      LocalMemAttnCore
+    - |-
+      AttnCoreNoMem
+    - |-
+      EmptyCore
+    - |-
+      RNNCore16
+    "legend_font_size": !!int |-
+      6
+    "font_size": !!int |-
+      8
+    "ticks": *id001
+    "ticklabels": *id002
