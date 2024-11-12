@@ -4,13 +4,13 @@
 [![arXiv](https://img.shields.io/badge/arXiv-tbd-b31b1b.svg)](tbd)
 
 
-## Installation:
+## Installation
 
 Create a conda environment from the export file:
 ```bash
 conda env create -f srmt_env_export.yml
 ```
-## Training:
+## Training
 
 To train **SRMT** from scratch, run:
 
@@ -24,7 +24,7 @@ To evaluate the trained model on the test set of environments, use:
 python eval.py
 ```
 
-## Episode Visualization:
+## Episode Visualization
 
 To run a single episode with the trained **SRMT** agents and produce an animation:
 
@@ -43,7 +43,7 @@ export OPENBLAS_NUM_THREADS="1"
 ```
 
 
-## Citation:
+## Citation
 
 TBD
 
