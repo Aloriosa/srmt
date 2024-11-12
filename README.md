@@ -47,4 +47,6 @@ export OPENBLAS_NUM_THREADS="1"
 
 TBD
 
+## Acknowledgements
 
+The repository is inspired by the [Learn to Follow](https://github.com/AIRI-Institute/learn-to-follow) repository.
