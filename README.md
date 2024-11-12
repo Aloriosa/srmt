@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Aloriosa/srmt/blob/main/LICENSE)
 [![arXiv](https://img.shields.io/badge/arXiv-tbd-b31b1b.svg)](tbd)
 
+This work was done in collaboration of AIRI, DeepPavlov.ai, and London Institute for Mathematical Sciences.
 
 ## Installation
 
