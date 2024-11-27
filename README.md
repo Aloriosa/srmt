@@ -46,7 +46,16 @@ export OPENBLAS_NUM_THREADS="1"
 
 ## Citation
 
-TBD
+```
+@inproceedings{
+sagirova2024communication,
+title={Communication via Shared Memory Improves Multi-agent Pathfinding},
+author={Alsu Sagirova and Yuri Kuratov and Mikhail Burtsev},
+booktitle={Language Gamification - NeurIPS 2024 Workshop},
+year={2024},
+url={https://openreview.net/forum?id=y2MOF8jsfD}
+}
+```
 
 ## Acknowledgements
 
