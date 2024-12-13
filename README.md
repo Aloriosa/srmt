@@ -47,12 +47,12 @@ export OPENBLAS_NUM_THREADS="1"
 
 ```
 @inproceedings{
-sagirova2024communication,
-title={Communication via Shared Memory Improves Multi-agent Pathfinding},
+sagirova2024shared,
+title={Shared Recurrent Memory Improves Multi-agent Pathfinding},
 author={Alsu Sagirova and Yuri Kuratov and Mikhail Burtsev},
-booktitle={Language Gamification - NeurIPS 2024 Workshop},
+booktitle={UniReps: 2nd Edition of the Workshop on Unifying Representations in Neural Models},
 year={2024},
-url={https://openreview.net/forum?id=y2MOF8jsfD}
+url={https://openreview.net/forum?id=1sq9eXwHRE}
 }
 ```
 
