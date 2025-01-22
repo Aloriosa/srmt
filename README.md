@@ -43,19 +43,6 @@ export OPENBLAS_NUM_THREADS="1"
 ```
 
 
-## Citation
-
-```
-@inproceedings{
-sagirova2024shared,
-title={Shared Recurrent Memory Improves Multi-agent Pathfinding},
-author={Alsu Sagirova and Yuri Kuratov and Mikhail Burtsev},
-booktitle={UniReps: 2nd Edition of the Workshop on Unifying Representations in Neural Models},
-year={2024},
-url={https://openreview.net/forum?id=1sq9eXwHRE}
-}
-```
-
 ## Acknowledgements
 
 The repository is inspired by the [Learn to Follow](https://github.com/AIRI-Institute/learn-to-follow) repository.
