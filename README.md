@@ -42,6 +42,19 @@ export MKL_NUM_THREADS="1"
 export OPENBLAS_NUM_THREADS="1"
 ```
 
+## Citation
+
+```
+@misc{sagirova2025srmtsharedmemorymultiagent,
+      title={SRMT: Shared Memory for Multi-agent Lifelong Pathfinding}, 
+      author={Alsu Sagirova and Yuri Kuratov and Mikhail Burtsev},
+      year={2025},
+      eprint={2501.13200},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2501.13200}, 
+}
+```
 
 ## Acknowledgements
 
