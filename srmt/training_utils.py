@@ -52,7 +52,7 @@ def run(config=None):
         params = Namespace(**config)
         params.wandb_thread_mode = False
 
-    if config.get("attn_core", None).lower() == "true":
+    if str(config.get("attn_core", None)).lower() == "true":
         register_custom_core()
     exp = Experiment(**config)
     flat_config = Namespace(**exp.dict())
