@@ -68,6 +68,7 @@ class MultiMapWrapper(gymnasium.Wrapper):
         super().__init__(env)
         self._configs = []
         self._rnd = np.random.default_rng(self.grid_config.seed)
+        pattern = self.grid_config.map_name
         if pattern:
             for map_name in sorted(MAPS_REGISTRY):
                 if re.match(pattern, map_name):
