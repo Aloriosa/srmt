@@ -12,11 +12,32 @@ conda env create -f srmt_env_export.yml
 ```
 ## Training
 
-To train **SRMT** from scratch, run:
+**SRMT** training is done with the `train.py` script.
+To modify the default training configuration values, one can use the command line arguments corresponding to the names of variables in `srmt/training_config.py`. 
 
+For example, SRMT with reward functions from the [paper](https://arxiv.org/abs/2501.13200) is trained as follows.
+
+Sparse reward function:
 ```bash
-python train.py
+python train.py --experiment=<name of the folder to store checkpoints> --attn_core=true --use_rnn=false --core_memory=true --const_reward=true --intrinsic_target_reward=0 --seed=<random seed>
 ```
+Dense reward function:
+```bash
+python3 train.py --experiment=<name of the folder to store checkpoints> --attn_core=true --use_rnn=false --core_memory=true --const_reward=true --seed=<random seed>
+```
+Moving Negative reward function:
+```bash
+python3 train.py --experiment=<name of the folder to store checkpoints> --attn_core=true --use_rnn=false --core_memory=true --any_move_reward=true --seed=<random seed>
+```
+Directional reward function:
+```bash
+python3 train.py --experiment=<name of the folder to store checkpoints> --attn_core=true --use_rnn=false --core_memory=true --target_reward=true --positive_reward=true --intrinsic_target_reward=0.005 --seed=<random seed>
+```
+Directional Negative reward function:
+```bash
+python3 train.py --experiment=<name of the folder to store checkpoints> --attn_core=true --use_rnn=false --core_memory=true --target_reward=true --reversed_reward=true --seed=<random seed>
+```
+
 
 ### Evaluation 
 To evaluate the trained model on the test set of environments, use:
