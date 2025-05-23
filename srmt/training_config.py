@@ -167,17 +167,27 @@ class ExperimentBtlnck(Experiment):
                                   num_attention_heads=4,
                                   max_position_embeddings=16384,
                                  )
-    #turn off all the planning heuristics, use regular unit cost for each cell
-    preprocessing: PreprocessorConfig = PreprocessorConfig(use_static_cost=False,
+    
+    preprocessing: PreprocessorConfig = PreprocessorConfig(
+                                                           # turn off static and dynamic costs that control Heuristic path planner from the Follower
+                                                           use_static_cost=False,
                                                            use_dynamic_cost=False,
                                                            reset_dynamic_cost=False,
+                                                           # a small per-step reward
                                                            intrinsic_target_reward=0.01,
+                                                           # agent observation window radius
                                                            network_input_radius=2,
+                                                           # whether to show target locations of other agents in the observation 
                                                            anontargets=True,
+                                                           # a unit reward for achieving the goal location
                                                            target_reward=True,
+                                                           # use the negative intrinsic_target_reward value to penalize agent steps in the env 
                                                            reversed_reward=False,
+                                                           # use the fixed negative reward value for any action 
                                                            const_reward=False,
+                                                           # use the positive value for per-step reward 
                                                            positive_reward=False,
+                                                           # use negative revard value for movement on the map regardless its direction
                                                            any_move_reward=False
                                                           )
     attn_core: bool = False
