@@ -92,7 +92,7 @@ class MultiMapWrapper(gymnasium.Wrapper):
                              self._rnd.choice(range(0, map_dim), 1)[0])
                             ]
                         cfg.size = max(roof*2 + corrdor_len, map_dim)
-                        if 'train' not in map_name^
+                        if 'train' not in map_name:
                             cfg.max_episode_steps = 2 * corrdor_len + 100
 
                     cfg = GridConfig(**cfg.dict())
