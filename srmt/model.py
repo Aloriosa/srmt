@@ -161,7 +161,7 @@ class TransformerCore(ModelCore):
         
     def forward(self, head_output, rnn_states, 
                 agent_memory=None, global_memory=None, 
-                history_seq=None,
+                history_seq=None, **kwargs
                ):
         is_seq = not torch.is_tensor(head_output)
         if not is_seq:
