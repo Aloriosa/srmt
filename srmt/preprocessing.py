@@ -88,6 +88,7 @@ class FollowerWrapper(ObservationWrapper):
 
     def get_intrinsic_rewards(self, reward, action=None):
         for agent_idx, r in enumerate(reward):
+            upd_reward = None
             if (self._cfg.any_move_reward == True) and (action is not None):
                 if reward[agent_idx] != 1:
                     if action[agent_idx] == 0: # if the agent predicted to stay at current location
@@ -108,11 +109,12 @@ class FollowerWrapper(ObservationWrapper):
                     upd_reward = -self._cfg.intrinsic_target_reward / 2.
                 else:
                     upd_reward = -self.intrinsic_reward[agent_idx]
-            if self._cfg.target_reward:
-                if reward[agent_idx] != 1:
+            if upd_reward is not None:
+                if self._cfg.target_reward:
+                    if reward[agent_idx] != 1:
+                        reward[agent_idx] = upd_reward
+                else:
                     reward[agent_idx] = upd_reward
-            else:
-                reward[agent_idx] = upd_reward
         return reward
 
     def step(self, action):
