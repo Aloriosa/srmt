@@ -172,7 +172,10 @@ class AttnCoreMemInference:
         
         policy_outputs_cpu = dict()
         for kk, vv in policy_outputs.items():
-            policy_outputs_cpu[kk] = policy_outputs[kk].cpu().numpy()
+            if kk == 'attentions':
+                policy_outputs_cpu[kk] = [x.cpu().numpy() for x in vv]
+            else:
+                policy_outputs_cpu[kk] = policy_outputs[kk].cpu().numpy()
         return policy_outputs['actions'].cpu().numpy(), policy_outputs_cpu
 
     def reset_states(self):

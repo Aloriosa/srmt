@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--ckpt_file', type=str, default='', help='ckpt file name')
     parser.add_argument('--ckpt_type', type=str, default='latest', help='loading latest or best-score ckpt')
     parser.add_argument('--seed', type=int, default=5, help='Random seed (default: %(default)d)')
-    parser.add_argument('--map_name', type=str, default='bottlenecks9-v-20', 
+    parser.add_argument('--map_name', type=str, default='bottlenecks9-v-20',
                         help='Map name (default: %(default)s)')
     args = parser.parse_args()
 
@@ -50,16 +50,20 @@ def main():
     else:
         custom_path_to_weights = None
         ckpt_file_short_name = ''
-    
-    print(run(create_custom_env(args, 
-                                render_dir=path_to_weights + '/' + ckpt_file_short_name,
-                                toolbox_env=True
-                               ), 
-              path_to_weights, 
-              args.ckpt_type,
-              log_path=f'{path_to_weights}/episode_log_{args.map_name}_{ckpt_file_short_name}_seed_{args.seed}.npy',
-              custom_path_to_weights=custom_path_to_weights
-             ))
+
+    print(
+        run(
+            create_custom_env(
+                args,
+                render_dir=path_to_weights + '/' + ckpt_file_short_name,
+                toolbox_env=True
+            ),
+            path_to_weights,
+            args.ckpt_type,
+            log_path=f'{path_to_weights}/episode_log_{args.map_name}_{ckpt_file_short_name}_seed_{args.seed}.npy',
+            custom_path_to_weights=custom_path_to_weights
+        )
+    )
 
 
 if __name__ == '__main__':

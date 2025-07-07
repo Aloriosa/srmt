@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from typing import Literal
@@ -106,7 +107,6 @@ class ResnetEncoder(Encoder):
             layers.extend([nn.Conv2d(curr_input_channels, out_channels, kernel_size=3, stride=1, padding=1)])
             layers.extend([ResBlock(self.encoder_cfg, out_channels, out_channels) for _ in range(res_blocks)])
             curr_input_channels = out_channels
-            
 
         layers.append(activation_func(self.encoder_cfg))
         self.conv_head = nn.Sequential(*layers)
@@ -151,18 +151,18 @@ class TransformerCore(ModelCore):
         core_cfg_copy['hidden_size'] = core_cfg_copy.pop('core_hidden_size')
         self.core_transformer = GPT2Block(GPT2Config(**core_cfg_copy))
         self.rnn_placeholder = nn.Linear(self.core_cfg.core_hidden_size, 1, bias=False)
-        self.wpe = nn.Embedding(core_cfg_copy['max_position_embeddings'], 
+        self.wpe = nn.Embedding(core_cfg_copy['max_position_embeddings'],
                                 self.core_cfg.core_hidden_size)
         if self.use_memory:
-            self.mem_head = nn.Linear(self.core_cfg.core_hidden_size, 
-                                      self.core_cfg.core_hidden_size, 
+            self.mem_head = nn.Linear(self.core_cfg.core_hidden_size,
+                                      self.core_cfg.core_hidden_size,
                                       bias=False)
         self.ln_f = nn.LayerNorm(self.core_cfg.core_hidden_size, eps=1e-5)
-        
-    def forward(self, head_output, rnn_states, 
-                agent_memory=None, global_memory=None, 
+
+    def forward(self, head_output, rnn_states,
+                agent_memory=None, global_memory=None,
                 history_seq=None, **kwargs
-               ):
+                ):
         is_seq = not torch.is_tensor(head_output)
         if not is_seq:
             head_output = head_output.unsqueeze(1)
@@ -180,15 +180,15 @@ class TransformerCore(ModelCore):
                     agent_memory_batch = agent_memory.unsqueeze(1)
                     restored_global_memory = global_memory.unflatten(
                         dim=1, sizes=(-1, self.core_cfg.core_hidden_size)
-                        )
+                    )
         if history_seq is not None:
             inputs = torch.cat([history_seq, head_output], dim=1)
         else:
             inputs = head_output.contiguous()
-                
+
         if agent_memory is not None:
             inputs = torch.cat([agent_memory_batch, inputs], dim=1)
-                
+
         position_ids = torch.arange(0, inputs.size(1), dtype=torch.long).to('cuda')
         position_ids = position_ids.unsqueeze(0)
         position_embeds = self.wpe(position_ids)
@@ -198,12 +198,17 @@ class TransformerCore(ModelCore):
         if agent_memory is not None:
             if self.use_global_memory:
                 encoder_hidden_states = restored_global_memory.contiguous()
-        x = self.core_transformer(hidden_states=hidden_states.contiguous(),
-                                  encoder_hidden_states=encoder_hidden_states,
-                                 )[0]
+        out = self.core_transformer(
+            hidden_states=hidden_states.contiguous(),
+            encoder_hidden_states=encoder_hidden_states,
+            output_attentions=True,
+        )
+        x = out[0]
+        attentions = out[1:]
+
         x = self.ln_f(x)
-        core_out = x[:,-1:]
-        
+        core_out = x[:, -1:]
+
         if self.use_memory:
             if first_time_mem:
                 my_new_mem = core_out.contiguous()
@@ -211,28 +216,31 @@ class TransformerCore(ModelCore):
                 my_new_mem, _ = torch.split(x, [1, x.size()[1] - 1], dim=1)
             my_new_mem = self.mem_head(my_new_mem)
         rnn_out_placeholder = self.rnn_placeholder(core_out).squeeze(1)
-        
+
         # update history with current head_output
         if history_seq is not None:
             new_history_seq = torch.cat([history_seq[:, 1:], head_output], dim=1)
             new_history_seq = new_history_seq.flatten(start_dim=1)
-        
+
         if not is_seq:
             core_out = core_out.squeeze(1)
             if self.use_memory:
                 my_new_mem = my_new_mem.squeeze(1)
-        
+
         if self.use_memory and history_seq is not None:
-            return core_out, rnn_out_placeholder, {'agent_new_memory': my_new_mem, 
-                                                   'global_memory': global_memory, 
-                                                   'new_history_seq': new_history_seq}
+            return core_out, rnn_out_placeholder, {'agent_new_memory': my_new_mem,
+                                                   'global_memory': global_memory,
+                                                   'new_history_seq': new_history_seq,
+                                                   'attentions': attentions}
         elif self.use_memory:
-            return core_out, rnn_out_placeholder, {'agent_new_memory': my_new_mem, 
-                                                   'global_memory': global_memory}
+            return core_out, rnn_out_placeholder, {'agent_new_memory': my_new_mem,
+                                                   'global_memory': global_memory,
+                                                   'attentions': attentions}
         elif history_seq is not None:
-            return core_out, rnn_out_placeholder, {'new_history_seq': new_history_seq}
+            return core_out, rnn_out_placeholder, {'new_history_seq': new_history_seq,
+                                                   'attentions': attentions}
         else:
-            return core_out, rnn_out_placeholder, {}
+            return core_out, rnn_out_placeholder, {'attentions': attentions,}
 
     def get_out_size(self) -> int:
         return self.core_cfg.core_hidden_size

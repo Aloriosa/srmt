@@ -22,6 +22,7 @@ def run_episode(env, algo, log_path=None):
         actions, policy_outputs = algo.act(obs, infos=infos)
         obs, rew, dones, tr, infos = env.step(actions)
         step_outputs = policy_outputs.copy()
+
         step_outputs['step'] = env.print_elapsed_steps
         step_outputs['obs'] = obs
         step_outputs['rew'] = rew
@@ -35,7 +36,7 @@ def run_episode(env, algo, log_path=None):
         if all(dones) or all(tr):
             break
     
-    return results_holder.get_final()
+    return results_holder.get_final(), episode_log
 
 
 class ResultsHolder:
