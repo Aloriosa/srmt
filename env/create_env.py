@@ -5,7 +5,7 @@ from pogema import AnimationConfig, AnimationMonitor
 
 from pogema import pogema_v0
 
-from follower.training_config import Environment
+from srmt.training_config import Environment
 
 import gymnasium
 import re
@@ -13,7 +13,7 @@ from copy import deepcopy
 from pogema import GridConfig
 
 from env.custom_maps import MAPS_REGISTRY
-from follower.preprocessing import wrap_preprocessors, PreprocessorConfig
+from srmt.preprocessing import wrap_preprocessors, PreprocessorConfig
 
 
 class ProvideGlobalObstacles(gymnasium.Wrapper):
@@ -25,7 +25,6 @@ class ProvideGlobalObstacles(gymnasium.Wrapper):
 
 
 def create_env_base(config: Environment, render_dir='renders'):
-    #print(f'follower create_env_base config {config}')
     env = pogema_v0(grid_config=config.grid_config)
     env = ProvideGlobalObstacles(env)
     if config.use_maps:
@@ -40,7 +39,6 @@ def create_env_base(config: Environment, render_dir='renders'):
 
 
 def create_pogematmaze_env(config: Environment, render_dir='renders'):
-#print(f'follower create_env_base config {config}')
     env = pogema_v0(grid_config=config.grid_config)
     env = ProvideGlobalObstacles(env)
     if config.use_maps:
