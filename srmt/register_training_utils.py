@@ -1,15 +1,16 @@
-import numpy as np
+from follower.model import ResnetEncoder, TransformerCore
 
 from sample_factory.algo.utils.context import global_model_factory
 from sample_factory.utils.typing import ObsSpace
-from sample_factory.model.encoder import Encoder
+from sample_factory.model.encoder import Encoder, MultiInputEncoder 
 from sample_factory.model.core import ModelCore
+from tensorboardX import SummaryWriter
 from sample_factory.utils.typing import Config, PolicyID
 from sample_factory.algo.runners.runner import AlgoObserver, Runner
-from sample_factory.utils.utils import log
-from tensorboardX import SummaryWriter
 
-from srmt.model import ResnetEncoder, TransformerCore
+import numpy as np
+
+from sample_factory.utils.utils import log
 
 
 def pogema_extra_episodic_stats_processing(*args, **kwargs):
@@ -39,6 +40,10 @@ def register_msg_handlers(cfg: Config, runner: Runner):
 
 def make_custom_encoder(cfg: Config, obs_space: ObsSpace) -> Encoder:
     """Factory function as required by the API."""
+    #print(f"\n\n\nenvoder cfg {cfg.env}, {cfg.env == 'PogemaTMaze-v0' }")
+    
+    if cfg.env == 'PogemaTMaze-v0':
+        return MultiInputEncoder(cfg, obs_space)
     return ResnetEncoder(cfg, obs_space)
 
 
