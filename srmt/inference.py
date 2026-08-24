@@ -1,12 +1,12 @@
 from pogema_toolbox.algorithm_config import AlgoBase
-from follower.preprocessing import PreprocessorConfig
+from srmt.preprocessing import PreprocessorConfig
 from utils import fix_num_threads_issue
 
 import json
 from copy import deepcopy
 
-from follower.training_config import Experiment, ExperimentBtlnck, ExperimentRandom
-from follower.register_env import register_custom_components
+from srmt.training_config import Experiment, ExperimentBtlnck, ExperimentRandom
+from srmt.register_env import register_custom_components
 
 import os
 from argparse import Namespace
@@ -32,7 +32,7 @@ from sample_factory.model.model_utils import get_rnn_size
 from sample_factory.algo.utils.make_env import make_env_func_batched
 from sample_factory.utils.attr_dict import AttrDict
 from sample_factory.algo.utils.rl_utils import prepare_and_normalize_obs
-from follower.register_training_utils import register_custom_model, register_custom_core
+from srmt.register_training_utils import register_custom_model, register_custom_core
 
 
 class FollowerInferenceConfig(AlgoBase, extra=Extra.forbid):
@@ -164,7 +164,7 @@ class FollowerInference:
 
         return obs_dict
 
-    def to_onnx(self, filename='follower.onnx'):
+    def to_onnx(self, filename='model.onnx'):
         self.net.eval()
         r = self.algo_cfg.training_config.preprocessing.network_input_radius
         log.info(f"Saving model with network_input_radius = {r}")
@@ -380,7 +380,7 @@ class AttnCoreMemInference(FollowerInference):
 
         return obs_dict
 
-    def to_onnx(self, filename='follower.onnx'):
+    def to_onnx(self, filename='model.onnx'):
         self.net.eval()
         r = self.algo_cfg.training_config.preprocessing.network_input_radius
         log.info(f"Saving model with network_input_radius = {r}")
