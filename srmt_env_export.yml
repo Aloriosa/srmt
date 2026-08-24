@@ -188,8 +188,8 @@ dependencies:
       - platformdirs==4.2.2
       - plotly==5.23.0
       - pluggy==1.5.0
-      - git+https://github.com/Aloriosa/pogema.git@22991c0906be98fac1eefc3b6c1b65698c8fe290
-      - git+https://github.com/Aloriosa/pogema-toolbox.git@b70490c6c6197e151001f3744e12aeba56791bd8
+      - git+https://github.com/Aloriosa/pogema.git@28b716965757f4438eccaa481c9f0ed1f5a636fe
+      - git+https://github.com/Aloriosa/pogema-toolbox.git@8cc83f3feafc2e3d329844be20fc2d4470722612
       - portpicker==1.2.0
       - probscale==0.2.3
       - proglog==0.1.10
@@ -234,7 +234,7 @@ dependencies:
       - s3transfer==0.10.2
       - sacred==0.8.0
       - safetensors==0.4.3
-      - git+https://github.com/Aloriosa/sample-factory.git@4ff4e5e65392104af23c7966c9474b034e84155c
+      - git+https://github.com/Aloriosa/sample-factory.git@7389c023858b42dab21b50de1cb76481f1ae171d
       - scikit-learn==1.5.1
       - scipy==1.13.1
       - seaborn==0.13.2
