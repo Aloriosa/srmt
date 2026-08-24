@@ -1,17 +1,23 @@
-import torch
-
-from typing import Literal
 from argparse import Namespace
+from typing import Literal
+
+import torch
 from pydantic import BaseModel
 from sample_factory.model.encoder import Encoder
 from sample_factory.model.core import ModelCore
 from sample_factory.algo.utils.context import global_model_factory
 from sample_factory.utils.typing import Config, ObsSpace
 from sample_factory.algo.utils.torch_utils import calc_num_elements
+
 from sample_factory.utils.utils import log
-from transformers import GPT2Config
-from transformers.models.gpt2.modeling_gpt2 import GPT2Block
+
+from transformers import GPT2Config#, BertLayer, BertConfig
+from transformers.models.gpt2.modeling_gpt2 import GPT2Block, GPT2Attention, GPT2MLP
+from transformers.activations import NewGELUActivation
+from transformers.pytorch_utils import Conv1D
 from torch import nn as nn
+import torch.nn.functional as F
+import numpy as np
 
 
 class EncoderConfig(BaseModel):
@@ -30,6 +36,7 @@ class EncoderConfig(BaseModel):
     num_res_blocks: int = 1
     activation_func: Literal['ReLU', 'ELU', 'Mish'] = 'ReLU'
     hidden_size: int = 128
+    #mem: bool = False
 
 
 def activation_func(cfg: EncoderConfig) -> nn.Module:
@@ -98,6 +105,7 @@ class ResnetEncoder(Encoder):
         self.encoder_cfg: EncoderConfig = EncoderConfig(**cfg.encoder)
 
         input_ch = obs_space['obs'].shape[0]
+        #print(f"curr_input_channels = {input_ch}, {obs_space['obs'].shape}")
         resnet_conf = [[self.encoder_cfg.num_filters, self.encoder_cfg.num_res_blocks]]
         curr_input_channels = input_ch
         layers = []
@@ -110,6 +118,7 @@ class ResnetEncoder(Encoder):
 
         layers.append(activation_func(self.encoder_cfg))
         self.conv_head = nn.Sequential(*layers)
+        print(f"obs_space['obs'].shape {obs_space['obs'].shape}")
         self.conv_head_out_size = calc_num_elements(self.conv_head, obs_space['obs'].shape)
         self.encoder_out_size = self.conv_head_out_size
 
@@ -119,120 +128,331 @@ class ResnetEncoder(Encoder):
                 activation_func(self.encoder_cfg),
             )
             self.encoder_out_size = self.encoder_cfg.hidden_size
+        '''
+        self.mem_head = None
+        self.mem_out_size = None
+        if self.encoder_cfg.mem:
+            # takes obstacles cahnnel from observation
+            self.mem_head = nn.Sequential(
+                nn.Linear(self.encoder_out_size, self.encoder_cfg.hidden_size),
+                activation_func(self.encoder_cfg),
+            )
+            self.mem_out_size = self.encoder_cfg.hidden_size
+        '''    
+        log.debug('Convolutional layer output size: %r', self.conv_head_out_size)
+        #log.debug('Mem layer output size: %r', self.mem_out_size)
 
     def get_out_size(self) -> int:
         return self.encoder_out_size
 
     def forward(self, x):
+        #print(f"resnet obs {x['obs'].shape}")
         x = x['obs']
         x = self.conv_head(x)
+        #print(f"conv {x.shape}")
         x = x.contiguous().view(-1, self.conv_head_out_size)
+        #print(f"flatten {x.shape}")
+        '''
+        mem = None
+        if self.encoder_cfg.mem:
+            mem = self.mem_linear(x)
+        '''
         if self.encoder_cfg.extra_fc_layers:
             x = self.extra_linear(x)
+        '''
+        if self.encoder_cfg.mem:
+            return (x, mem)
+        else:
+        '''
+        #print(f"encoder out {x.shape}")
         return x
 
 
+# this class largely follows the official sonnet implementation
+# https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/relational_memory.py
+
+
+
 class CoreConfig(BaseModel):
+    """
+    Configuration for an encoder.
+
+    """
     num_attention_heads: int = 8
     core_hidden_size: int = 512
-    mem: bool = True
     max_position_embeddings: int = 16384
     add_cross_attention: bool = True
 
 
+idx = 0
+global_train_init = False
 class TransformerCore(ModelCore):
     def __init__(self, cfg: Config, input_size: int):
         super().__init__(cfg)
-        self.core_cfg: CoreConfig = CoreConfig(**cfg.core)
-        self.use_memory = cfg.core_memory
-        self.use_global_memory = cfg.use_global_memory
         self.num_agents = cfg.environment['grid_config']['num_agents']
         core_cfg_copy = cfg.core.copy()
-        core_cfg_copy['hidden_size'] = core_cfg_copy.pop('core_hidden_size')
-        self.core_transformer = GPT2Block(GPT2Config(**core_cfg_copy))
-        self.rnn_placeholder = nn.Linear(self.core_cfg.core_hidden_size, 1, bias=False)
-        self.wpe = nn.Embedding(core_cfg_copy['max_position_embeddings'], 
-                                self.core_cfg.core_hidden_size)
-        if self.use_memory:
-            self.mem_head = nn.Linear(self.core_cfg.core_hidden_size, 
-                                      self.core_cfg.core_hidden_size, 
-                                      bias=False)
-        self.ln_f = nn.LayerNorm(self.core_cfg.core_hidden_size, eps=1e-5)
-        
-    def forward(self, head_output, rnn_states, 
-                agent_memory=None, global_memory=None, 
-                history_seq=None, **kwargs
-               ):
-        is_seq = not torch.is_tensor(head_output)
-        if not is_seq:
-            head_output = head_output.unsqueeze(1)
-            if history_seq is not None:
-                history_seq = history_seq.unflatten(
-                    dim=1, sizes=(-1, self.core_cfg.core_hidden_size)
-                )
-            first_time_mem = False
-            if self.use_memory:
-                # first pass with empty memory
-                if not agent_memory.abs().sum().is_nonzero():
-                    agent_memory = None
-                    first_time_mem = True
-                else:
-                    agent_memory_batch = agent_memory.unsqueeze(1)
-                    restored_global_memory = global_memory.unflatten(
-                        dim=1, sizes=(-1, self.core_cfg.core_hidden_size)
-                        )
-        if history_seq is not None:
-            inputs = torch.cat([history_seq, head_output], dim=1)
-        else:
-            inputs = head_output.contiguous()
-                
-        if agent_memory is not None:
-            inputs = torch.cat([agent_memory_batch, inputs], dim=1)
-                
-        position_ids = torch.arange(0, inputs.size(1), dtype=torch.long).to('cuda')
-        position_ids = position_ids.unsqueeze(0)
-        position_embeds = self.wpe(position_ids)
-        hidden_states = inputs + position_embeds
+        self.core_cfg: CoreConfig = CoreConfig(**cfg.core)
+        self.use_memory = cfg.core_memory
+        self.relational_rnn = cfg.relational_rnn
+        self.rate_memory = cfg.rate_memory
+        self.use_global_memory = cfg.use_global_memory
+        self.mem_recurrence = bool(cfg.mem_recurrence != -1)
 
-        encoder_hidden_states = None
-        if agent_memory is not None:
-            if self.use_global_memory:
-                encoder_hidden_states = restored_global_memory.contiguous()
-        x = self.core_transformer(hidden_states=hidden_states.contiguous(),
-                                  encoder_hidden_states=encoder_hidden_states,
-                                 )[0]
-        x = self.ln_f(x)
-        core_out = x[:,-1:]
-        
-        if self.use_memory:
-            if first_time_mem:
-                my_new_mem = core_out.contiguous()
-            else:
-                my_new_mem, _ = torch.split(x, [1, x.size()[1] - 1], dim=1)
-            my_new_mem = self.mem_head(my_new_mem)
-        rnn_out_placeholder = self.rnn_placeholder(core_out).squeeze(1)
-        
-        # update history with current head_output
-        if history_seq is not None:
-            new_history_seq = torch.cat([history_seq[:, 1:], head_output], dim=1)
-            new_history_seq = new_history_seq.flatten(start_dim=1)
-        
-        if not is_seq:
-            core_out = core_out.squeeze(1)
-            if self.use_memory:
-                my_new_mem = my_new_mem.squeeze(1)
-        
-        if self.use_memory and history_seq is not None:
-            return core_out, rnn_out_placeholder, {'agent_new_memory': my_new_mem, 
-                                                   'global_memory': global_memory, 
-                                                   'new_history_seq': new_history_seq}
-        elif self.use_memory:
-            return core_out, rnn_out_placeholder, {'agent_new_memory': my_new_mem, 
-                                                   'global_memory': global_memory}
-        elif history_seq is not None:
-            return core_out, rnn_out_placeholder, {'new_history_seq': new_history_seq}
+        self.layer_size = self.core_cfg.core_hidden_size
+        if self.mem_recurrence:
+            initial_hidden_values = torch.zeros((self.layer_size)) # torch.normal(0, 1, size=(self.layer_size,)) # 
+            self.initial_agent_memory = torch.nn.Parameter(initial_hidden_values, requires_grad=True)
+            self.register_parameter(param=self.initial_agent_memory, name='initial_agent_memory')
         else:
-            return core_out, rnn_out_placeholder, {}
+            self.initial_agent_memory = None
+        
+        # for T-Mazes
+        '''
+        # Self-attention: inp and state attend to each other
+        self.attention = torch.nn.MultiheadAttention(
+            embed_dim=self.layer_size, 
+            num_heads=4,  # cfg.core['num_attention_heads'],
+            batch_first=True
+        )
+        if self.use_global_memory:
+            self.cross_attention = torch.nn.MultiheadAttention(
+                embed_dim=self.layer_size, 
+                num_heads=4,  # cfg.core['num_attention_heads'],
+                batch_first=True
+            )
+        self.mask = torch.nn.Transformer().generate_square_subsequent_mask(cfg.rollout + 3)# 
+        '''
+
+        # for bottlenecks
+        core_cfg_copy['hidden_size'] = core_cfg_copy.pop('core_hidden_size')
+        self.core_transformer = nn.ModuleList([
+
+            GPT2Block(GPT2Config(**core_cfg_copy), layer_idx=i) for i in range(cfg.num_transformer_layers)])
+
+        self.wpe = nn.Embedding(core_cfg_copy['max_position_embeddings'], self.layer_size)
+
+        
+        self.out_proj = torch.nn.Linear(self.layer_size, self.layer_size)
+        self.state_proj = torch.nn.Linear(self.layer_size, self.layer_size)
+        self.ln_f = nn.LayerNorm(self.layer_size, eps=1e-5)
+
+        
+
 
     def get_out_size(self) -> int:
         return self.core_cfg.core_hidden_size
+
+    def forward(self, head_output, rnn_states=None, 
+                agent_memory=None, global_memory=None, 
+                history_seq=None,
+                reward_seq=None,
+                action_seq=None,
+                env_agent_buffer_rollout_info=None,
+                values_only=False,
+                global_state_indices=None,
+                custom_num_agents=None
+                ):
+        if custom_num_agents is not None:
+            self.num_agents = custom_num_agents
+            
+        global idx
+        global global_train_init
+        inp = head_output
+        
+        if history_seq is not None: # (bs, seq_len * h_dim * num_agents) # lays everything flattened for the first agent, then for the second etc.
+            # i want the unflattened version to be (num_agents, bs, seq_len, h_dim)
+            history_seq = history_seq.unflatten(dim=1, sizes=(-1, self.core_cfg.core_hidden_size))
+        initial_mem = False
+        if self.use_memory:
+            if self.mem_recurrence and (not torch.sum(agent_memory.abs()).is_nonzero()):
+                batch_size = head_output.shape[0]
+
+                state = self.initial_agent_memory[:]
+                state = state.unsqueeze(0).expand(batch_size, -1)
+
+
+                initial_mem = True
+            else:
+                state = agent_memory
+        else:
+            state = None
+        
+        history_list = history_seq.split(1, dim=1)
+        history_list = [i.squeeze(1) for i in history_list]
+        
+        if self.use_memory:
+            seq = torch.stack([state] + history_list + [inp, state], dim=1) # 
+        else:
+            seq = inp.unsqueeze(1)
+            seq = torch.cat([history_seq, seq], dim=1)
+        
+        def create_global_memory_batch(state, env_agent_buffer_rollout_info, global_state_indices=None):
+            if global_state_indices is None:
+                env_idx = env_agent_buffer_rollout_info[:, 0]
+                agent_idx = env_agent_buffer_rollout_info[:, 1]
+                rollout_step = env_agent_buffer_rollout_info[:, 2]
+
+                ear = env_agent_buffer_rollout_info[:, :3]
+
+                is_active_list = env_agent_buffer_rollout_info[:, 3:]
+                
+                batch_indices_global_mem = [None] * len(env_agent_buffer_rollout_info)
+                batch_indices_padding = torch.all(env_agent_buffer_rollout_info <= 0, dim=1).nonzero(as_tuple=True)[0]
+                global_state_indices = [None] * len(env_agent_buffer_rollout_info)
+                for i in batch_indices_padding:
+                    batch_indices_global_mem[i] = torch.stack([torch.zeros_like(state[0]).to(state.device)] * self.num_agents)
+                actual_indices = [i for i in range(len(env_agent_buffer_rollout_info)) if i not in batch_indices_padding]
+                while len(actual_indices) > 0:
+                    idx = actual_indices[0]
+                    env = env_idx[idx]
+                    step = rollout_step[idx]
+                    active_agents_ids = is_active_list[idx].nonzero(as_tuple=True)[0]
+                    
+                    active_agents_batch_indices = []
+                    team_batch_indices = []
+                    team_global_mem = []
+                    for agent in range(self.num_agents):
+                        if agent in active_agents_ids:
+                            zz = torch.all(ear[idx:] == torch.tensor([env,
+                                                                      agent,
+                                                                      step
+                                                                     ]).to(ear.device), 
+                                                            dim=1
+                                          ).nonzero(as_tuple=True)[0]
+                            if len(zz) < 1:
+                                print(f"looking {[env,agent,step]} in {ear[:]}, {ear.shape}")
+                                assert False
+                                
+                            else:
+                                curr_agent_batch_index = idx + zz.min()
+                                active_agents_batch_indices.append(curr_agent_batch_index) #[0]
+                                team_batch_indices.append(curr_agent_batch_index)
+                                team_global_mem.append(state[curr_agent_batch_index]) #[0]
+                        else:
+                            team_global_mem.append(torch.zeros_like(state[0]).to(state.device))
+                            team_batch_indices.append(-1)
+                    team_global_mem = torch.stack(team_global_mem)     
+                    assert len(active_agents_batch_indices) == len(set(active_agents_batch_indices)), f'indices are repeating: idx {idx}, indices {active_agents_batch_indices}'
+                    assert -1 not in team_batch_indices, f"team_batch_indices not full {team_batch_indices}"
+                    for i in active_agents_batch_indices:
+                        assert i in actual_indices, f"i = {i} from {active_agents_batch_indices} not in actual_indices {actual_indices}, curr idx {idx}, {env_agent_buffer_rollout_info[:idx+3]}, batch_indices_padding {batch_indices_padding}"
+
+                        batch_indices_global_mem[i] = team_global_mem
+                        global_state_indices[i] = torch.stack(team_batch_indices)
+                        actual_indices.remove(i)
+
+                assert None not in batch_indices_global_mem, f"batch_indices_global_mem has nones {batch_indices_global_mem}"
+                assert None not in global_state_indices, f"global_state_indices has nones {global_state_indices}"
+                global_memory_batch = torch.stack(batch_indices_global_mem, dim=0).to(state.device)
+                
+            else:
+                global_memory_batch = torch.stack([state[i] for i in global_state_indices], dim=0).to(state.device)
+                
+            assert global_memory_batch.shape[0] == env_agent_buffer_rollout_info.shape[0], 'global memory batch is not fully done'
+            return global_memory_batch, global_state_indices
+
+        
+        global_memory_batch = None
+        if self.use_global_memory:
+            if values_only:
+                global_memory_batch = global_memory.unflatten(dim=1, sizes=(-1, self.core_cfg.core_hidden_size)).contiguous()
+            else:
+                if initial_mem:
+                    assert state is not None, 'state is None but calling global_memory_batch_creation'
+                    assert global_state_indices is None, 'initial mem but global_state_indices is not None'
+                    global_memory_batch, global_state_indices = create_global_memory_batch(state, env_agent_buffer_rollout_info, 
+                    global_state_indices=global_state_indices)
+                    
+                else:
+                    global_memory_batch = global_memory.unflatten(dim=1, sizes=(-1, self.core_cfg.core_hidden_size))
+                    
+            position_ids = torch.arange(0, global_memory_batch.size(1), dtype=torch.long).to(global_memory_batch.device)
+            position_ids = position_ids.unsqueeze(0)
+            position_embeds = self.wpe(position_ids)
+            global_memory_batch = global_memory_batch + position_embeds
+    
+        # for T-mazes
+        '''
+        residual = seq 
+        attn_output, _ = self.attention(seq, seq, seq, attn_mask=self.mask.to(seq.device))
+        attn_output = attn_output + residual
+        if self.use_global_memory:
+            residual = attn_output
+            attn_output, _ = self.cross_attention(query=attn_output,
+                                                  key=global_memory_batch, 
+                                                  value=global_memory_batch
+                                                  )
+            attn_output = attn_output + residual
+        '''
+        # for bottlenecks
+        for block in self.core_transformer:
+            outputs = block(seq, encoder_hidden_states=global_memory_batch)
+            seq = outputs[0]
+        attn_output = seq
+
+        attn_output = self.ln_f(attn_output)
+        if self.use_memory:
+            attended_inp = attn_output[:, -2, :]
+            attended_state = attn_output[:, -1, :]
+            new_state = self.state_proj(attended_state)
+        else:
+            attended_inp = attn_output[:, -1, :]
+            new_state = head_output
+            
+        out = self.out_proj(attended_inp)
+        
+        if history_seq is not None:
+            new_history_seq = torch.cat([history_seq[:, 1:], inp.unsqueeze(1)], dim=1)
+            new_history_seq = new_history_seq.flatten(start_dim=1)           
+
+        if self.use_global_memory:
+            if values_only:
+                new_global_memory = global_memory
+            else:
+                new_global_memory, global_state_indices = create_global_memory_batch(new_state, env_agent_buffer_rollout_info, 
+                    global_state_indices=global_state_indices)
+                new_global_memory = new_global_memory.flatten(start_dim=1)          
+        else:
+            new_global_memory = global_memory
+
+
+        def get_pr(idx_val):
+            def pr(*args):
+                print("doing backward for new state {}".format(idx_val))
+            return pr
+
+        def get_pr_out(idx_val):
+            def pr(*args):
+                print("doing backward for out {}".format(idx_val))
+            return pr
+        
+        def get_pr_state(idx_val):
+            def pr(*args):
+                print("doing backward for inp state {}".format(idx_val))
+            return pr
+        
+        def get_pr_initmem(idx_val):
+            def pr(*args):
+                print("doing backward for init ag mem {}".format(idx_val))
+            return pr
+        
+        def get_pr_gmb(idx_val):
+            def pr(*args):
+                print("doing backward for global mem batch {}".format(idx_val))
+            return pr
+        
+        def get_pr_gm(idx_val):
+            def pr(*args):
+                print("doing backward for global mem {}".format(idx_val))
+            return pr
+        
+        def get_pr_ngm(idx_val):
+            def pr(*args):
+                print("doing backward for new global mem {}".format(idx_val))
+            return pr
+        
+        return out, rnn_states, {'agent_new_memory': new_state,
+                                    'new_history_seq': new_history_seq,
+                                    'new_global_memory': new_global_memory,
+                                    'global_state_indices': global_state_indices
+                                    }
