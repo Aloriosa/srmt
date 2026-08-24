@@ -5,7 +5,7 @@ from pogema import AnimationConfig, AnimationMonitor
 
 from pogema import pogema_v0
 
-from srmt.training_config import Environment
+from follower.training_config import Environment
 
 import gymnasium
 import re
@@ -13,7 +13,7 @@ from copy import deepcopy
 from pogema import GridConfig
 
 from env.custom_maps import MAPS_REGISTRY
-from srmt.preprocessing import wrap_preprocessors, PreprocessorConfig
+from follower.preprocessing import wrap_preprocessors, PreprocessorConfig
 
 
 class ProvideGlobalObstacles(gymnasium.Wrapper):
@@ -25,18 +25,33 @@ class ProvideGlobalObstacles(gymnasium.Wrapper):
 
 
 def create_env_base(config: Environment, render_dir='renders'):
-    print('create_env_base')
+    #print(f'follower create_env_base config {config}')
     env = pogema_v0(grid_config=config.grid_config)
     env = ProvideGlobalObstacles(env)
     if config.use_maps:
         env = MultiMapWrapper(env)
     if config.with_animation:
         env = AnimationMonitor(env, AnimationConfig(directory=render_dir, egocentric_idx=None))
+
     # adding runtime metrics
     env = RuntimeMetricWrapper(env)
 
     return env
 
+
+def create_pogematmaze_env(config: Environment, render_dir='renders'):
+#print(f'follower create_env_base config {config}')
+    env = pogema_v0(grid_config=config.grid_config)
+    env = ProvideGlobalObstacles(env)
+    if config.use_maps:
+        env = MultiMapWrapper(env)
+    if config.with_animation:
+        env = AnimationMonitor(env, AnimationConfig(directory=render_dir, egocentric_idx=None))
+
+    # adding runtime metrics
+    env = RuntimeMetricWrapper(env)
+
+    return env
 
 class RuntimeMetricWrapper(gymnasium.Wrapper):
     def __init__(self, env):
@@ -75,13 +90,63 @@ class MultiMapWrapper(gymnasium.Wrapper):
                     cfg = deepcopy(self.grid_config)
                     cfg.map = MAPS_REGISTRY[map_name]
                     cfg.map_name = map_name
+                    
+                    if map_name.startswith('crossroads'):
+                        map_params = map_name.split('-')[-3:]
+                        map_dim = int(map_params[0])
+                        x_range = list(map(int, map_params[1].split('_')))
+                        y_range = list(map(int, map_params[2].split('_')))
+                        
+                        cfg.size = map_dim
+                        cfg.agents_xy = [
+                            (self._rnd.choice(range(*x_range), 1)[0], 
+                             self._rnd.choice(range(*y_range), 1)[0]),
+                            (self._rnd.choice(range(*y_range), 1)[0], 
+                             self._rnd.choice(range(*(map_dim - np.array(x_range[::-1])).tolist()), 1)[0]),
+                            (self._rnd.choice(range(*(map_dim - np.array(x_range[::-1])).tolist()), 1)[0], 
+                             self._rnd.choice(range(*y_range), 1)[0]),
+                            (self._rnd.choice(range(*y_range), 1)[0], 
+                             self._rnd.choice(range(*x_range), 1)[0]),
+                            
+                            ]
+                        cfg.targets_xy = [
+                            (self._rnd.choice(range(*(map_dim - np.array(x_range[::-1])).tolist()), 1)[0], 
+                             self._rnd.choice(range(*y_range), 1)[0]),
+                            (self._rnd.choice(range(*y_range), 1)[0], 
+                             self._rnd.choice(range(*x_range), 1)[0]),
+                            (self._rnd.choice(range(*x_range), 1)[0], 
+                             self._rnd.choice(range(*y_range), 1)[0]),
+                            (self._rnd.choice(range(*y_range), 1)[0], 
+                             self._rnd.choice(range(*(map_dim - np.array(x_range[::-1])).tolist()), 1)[0]),
+                            ]
+                    if map_name.startswith('bottlenecks50-v'):
+                        map_dim = 50
+                        corrdor_len = int(map_name.split('-')[-1])
+                        roof = (map_dim - corrdor_len) // 2
+                        print(f"{map_name}: corrdor_len {corrdor_len}, roof {roof}")
+                        cfg.agents_xy = [
+                            (self._rnd.choice(range(0, roof), 1)[0], 
+                             self._rnd.choice(range(0, map_dim), 1)[0]),
+                            (self._rnd.choice(range(roof + corrdor_len, map_dim), 1)[0], 
+                             self._rnd.choice(range(0, map_dim), 1)[0])
+                            ]
+                        cfg.targets_xy = [
+                            (self._rnd.choice(range(roof + corrdor_len, map_dim), 1)[0], 
+                             self._rnd.choice(range(0, map_dim), 1)[0]),
+                            (self._rnd.choice(range(0, roof), 1)[0], 
+                             self._rnd.choice(range(0, map_dim), 1)[0])
+                            ]
                     if map_name.startswith('bottlenecks9-v'):
                         map_dim = 9
                         roof = 2
                         corrdor_len = int(map_name.split('-')[-1].split('_len')[0])
+                        
+                                         
+                        
                         cfg.agents_xy = [
                             (self._rnd.choice(range(0, roof), 1)[0], 
                              self._rnd.choice(range(0, map_dim), 1)[0]),
+                            #(roof*2 + corrdor_len-1, 0)
                             (self._rnd.choice(range(roof + corrdor_len, roof*2 + corrdor_len), 1)[0], 
                              self._rnd.choice(range(0, map_dim), 1)[0])
                             ]
@@ -92,10 +157,10 @@ class MultiMapWrapper(gymnasium.Wrapper):
                              self._rnd.choice(range(0, map_dim), 1)[0])
                             ]
                         cfg.size = max(roof*2 + corrdor_len, map_dim)
-                        if 'train' not in map_name:
-                            cfg.max_episode_steps = 2 * corrdor_len + 100
-
-                    cfg = GridConfig(**cfg.dict())
+                        if 'train' not in map_name: 
+                            cfg.max_episode_steps = 2 * corrdor_len + 500 # 2 * 50 + 100 #
+                           cfg = GridConfig(**cfg.dict())
+                    zz = [(k, v) for k, v in cfg.dict().items() if k != 'map' ]
                     self._configs.append(cfg)
             if not self._configs:
                 raise KeyError(f"No map matching: {pattern}, among maps {sorted(MAPS_REGISTRY.keys())}")
