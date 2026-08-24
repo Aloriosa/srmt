@@ -5,11 +5,11 @@ from sample_factory.utils.attr_dict import AttrDict
 
 from env.create_env import create_env_base, create_pogematmaze_env
 from env.tmaze_env import create_tmaze_env
-from follower.training_config import Experiment
+from srmt.training_config import Experiment
 
 import gymnasium
-from follower.training_config import Environment, EnvironmentTMaze, EnvironmentPogemaTMaze
-from follower.preprocessing import PreprocessorConfig, wrap_preprocessors, wrap_pogematmaze_preprocessors
+from srmt.training_config import Environment, EnvironmentTMaze, EnvironmentPogemaTMaze
+from srmt.preprocessing import PreprocessorConfig, wrap_preprocessors, wrap_pogematmaze_preprocessors
 
 
 def create_env(environment_cfg: Environment, preprocessing_cfg: PreprocessorConfig):
@@ -33,7 +33,7 @@ class MultiEnv(gymnasium.Wrapper):
             self.envs = [create_env(env_cfg, preprocessing_cfg)]
         else:
             assert env_cfg.target_num_agents % env_cfg.grid_config.num_agents == 0, \
-                f"Target num follower must be divisible by num agents: env_cfg.target_num_agents = {env_cfg.target_num_agents}, env_cfg.grid_config.num_agents = {env_cfg.grid_config.num_agents}"
+                f"Target num must be divisible by num agents: env_cfg.target_num_agents = {env_cfg.target_num_agents}, env_cfg.grid_config.num_agents = {env_cfg.grid_config.num_agents}"
             num_envs = env_cfg.target_num_agents // env_cfg.grid_config.num_agents
             self.envs = [create_env(env_cfg, preprocessing_cfg) for _ in range(num_envs)]
         super().__init__(self.envs[0])
@@ -86,7 +86,7 @@ def make_env(full_env_name, cfg=None, env_config=None, render_mode=None):
     else:
         zz = vars(cfg)
     p_config = Experiment(**zz)
-    assert len(zz) != 0, f"follower/register_env: p_config {zz}"
+    assert len(zz) != 0, f"register_env: p_config {zz}"
     
     print(f"env config after {p_config.environment}")
     environment_config = p_config.environment
