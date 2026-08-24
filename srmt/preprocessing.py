@@ -4,7 +4,7 @@ import inspect
 from gymnasium import ObservationWrapper
 from gymnasium.spaces import Box, Dict
 
-from follower.planning import ResettablePlanner, PlannerConfig
+from srmt.planning import ResettablePlanner, PlannerConfig
 
 
 class PreprocessorConfig(PlannerConfig):
